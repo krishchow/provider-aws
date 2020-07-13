@@ -48,3 +48,7 @@ type PutBucketVersioningRequest interface {
 type DeleteBucketRequest interface {
 	Send(context.Context) (*s3.DeleteBucketResponse, error)
 }
+
+type PutBucketPolicyRequest interface {
+	Send(context.Context) (*s3.PutBucketPolicyResponse, error)
+}

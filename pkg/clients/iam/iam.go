@@ -28,6 +28,7 @@ type Client interface {
 	GetPolicyVersion(policyName string) (string, error)
 	UpdatePolicy(policyName string, policyDocument string) (string, error)
 	DeletePolicyAndDetach(username string, policyName string) error
+	GetAccountID() (string, error)
 }
 
 type iamClient struct {
@@ -160,7 +161,7 @@ func (c *iamClient) DeleteUser(username string) error {
 }
 
 // getAccountID - Gets the accountID of the authenticated session.
-func (c *iamClient) getAccountID() (string, error) {
+func (c *iamClient) GetAccountID() (string, error) {
 	if c.accountID == nil {
 		user, err := c.iam.GetUserRequest(&iam.GetUserInput{}).Send(context.TODO())
 		if err != nil {
@@ -178,7 +179,7 @@ func (c *iamClient) getAccountID() (string, error) {
 }
 
 func (c *iamClient) getPolicyARN(policyName string) (string, error) {
-	accountID, err := c.getAccountID()
+	accountID, err := c.GetAccountID()
 	if err != nil {
 		return "", err
 	}

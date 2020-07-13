@@ -134,6 +134,18 @@ func (r *Reconciler) _create(bucket *bucketv1alpha3.S3Bucket, client s3.Service)
 		return r.fail(bucket, err)
 	}
 
+	// Create bucket policy
+	if bucket.Spec.BucketPolicy != nil {
+		err = client.FormatBucketPolicy(bucket)
+		if err != nil {
+			return r.fail(bucket, err)
+		}
+		err = client.CreateBucketPolicy(bucket.Spec.BucketPolicy, bucket)
+		if err != nil {
+			return r.fail(bucket, err)
+		}
+	}
+
 	if err := r.PublishConnection(ctx, bucket, managed.ConnectionDetails{
 		runtimev1alpha1.ResourceCredentialsSecretUserKey:     []byte(aws.StringValue(accessKeys.AccessKeyId)),
 		runtimev1alpha1.ResourceCredentialsSecretPasswordKey: []byte(aws.StringValue(accessKeys.SecretAccessKey)),

@@ -55,3 +55,7 @@ func (api *S3Operations) DeleteBucketRequest(i *s3.DeleteBucketInput) DeleteBuck
 func (api *S3Operations) CreateBucketRequest(i *s3.CreateBucketInput) CreateBucketRequest {
 	return api.s3.CreateBucketRequest(i)
 }
+
+func (api *S3Operations) PutBucketPolicy(i *s3.PutBucketPolicyInput) PutBucketPolicyRequest {
+	return api.s3.PutBucketPolicyRequest(i)
+}

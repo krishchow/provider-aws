@@ -53,6 +53,8 @@ type Service interface {
 	UpdateVersioning(bucket *v1alpha3.S3Bucket) error
 	UpdatePolicyDocument(username string, bucket *v1alpha3.S3Bucket) (string, error)
 	DeleteBucket(bucket *v1alpha3.S3Bucket) error
+	CreateBucketPolicy(bucket *v1alpha3.S3Bucket) error
+	FormatBucketPolicy(bucket *v1alpha3.S3Bucket) error
 }
 
 // Client implements S3 Client
@@ -78,6 +80,44 @@ func (c *Client) CreateOrUpdateBucket(bucket *v1alpha3.S3Bucket) error {
 		}
 	}
 	return err
+}
+
+func (c *Client) FormatBucketPolicy(bucket *v1alpha3.S3Bucket) error {
+	iamUsername := bucket.Spec.IAMUsername
+	accountId, err := c.iamClient.GetAccountID()
+	if err != nil {
+		return err
+	}
+	statements := bucket.Spec.BucketPolicy.PolicyStatement
+	for i := 0; i < len(statements); i++ {
+		statement := statements[i]
+		if statement.ApplyToIAMUser {
+			statement.Principal.AWSPrincipal = append(statement.Principal.AWSPrincipal, fmt.Sprintf("arn:aws:iam::%s:%s:root", accountId, iamUsername))
+		}
+		updatedPaths := make([]string, len(statement.ResourcePath))
+		for _, v := range statement.ResourcePath {
+			formatted := fmt.Sprintf("arn:aws:s3:::%s", v)
+			updatedPaths = append(updatedPaths, formatted)
+		}
+		statement.ResourcePath = updatedPaths
+	}
+	return nil
+}
+
+func (c *Client) CreateBucketPolicy(bucket *v1alpha3.S3Bucket) error {
+
+	policyData, err := json.Marshal(bucket.Spec.BucketPolicy)
+	if err != nil {
+		return err
+	}
+	policyBody := string(policyData)
+
+	_, err = c.s3.PutBucketPolicy(&s3.PutBucketPolicyInput{Bucket: aws.String(meta.GetExternalName(bucket)), Policy: aws.String(policyBody), ConfirmRemoveSelfBucketAccess: aws.Bool(false) }).Send(context.TODO())
+	if resource.Ignore(isErrorNotFound, err) != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Bucket represents crossplane metadata about the bucket
