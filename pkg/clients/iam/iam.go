@@ -160,7 +160,7 @@ func (c *iamClient) DeleteUser(username string) error {
 	return nil
 }
 
-// getAccountID - Gets the accountID of the authenticated session.
+// GetAccountID - Gets the accountID of the authenticated session.
 func (c *iamClient) GetAccountID() (string, error) {
 	if c.accountID == nil {
 		user, err := c.iam.GetUserRequest(&iam.GetUserInput{}).Send(context.TODO())

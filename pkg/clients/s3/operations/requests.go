@@ -49,6 +49,7 @@ type DeleteBucketRequest interface {
 	Send(context.Context) (*s3.DeleteBucketResponse, error)
 }
 
+// PutBucketPolicyRequest is a API request type for the PutBucketPolicy API operation.
 type PutBucketPolicyRequest interface {
 	Send(context.Context) (*s3.PutBucketPolicyResponse, error)
 }

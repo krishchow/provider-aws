@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 
 	"github.com/crossplane/provider-aws/apis/storage/v1alpha3"
+
 	client "github.com/crossplane/provider-aws/pkg/clients/s3"
 )
 
@@ -32,6 +33,7 @@ type MockS3Client struct {
 	MockUpdateVersioning     func(bucket *v1alpha3.S3Bucket) error
 	MockUpdatePolicyDocument func(username string, bucket *v1alpha3.S3Bucket) (string, error)
 	MockDelete               func(bucket *v1alpha3.S3Bucket) error
+	MockCreatePolicy         func(bucket *v1alpha3.S3Bucket) error
 }
 
 // CreateOrUpdateBucket calls the underlying MockCreateOrUpdateBucket method.
@@ -67,4 +69,9 @@ func (m *MockS3Client) UpdatePolicyDocument(username string, bucket *v1alpha3.S3
 // DeleteBucket calls the underlying MockDeleteBucket method.
 func (m *MockS3Client) DeleteBucket(bucket *v1alpha3.S3Bucket) error {
 	return m.MockDelete(bucket)
+}
+
+// CreateBucketPolicy calls the underlying MockCreatePolicy method.
+func (m *MockS3Client) CreateBucketPolicy(bucket *v1alpha3.S3Bucket) error {
+	return m.MockCreatePolicy(bucket)
 }

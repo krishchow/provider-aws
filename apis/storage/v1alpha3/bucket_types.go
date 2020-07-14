@@ -50,7 +50,6 @@ type S3BucketParameters struct {
 	// bucket. This controls who can access this S3 bucket.
 	BucketPolicy *S3BucketPolicy `json:"bucketPolicy,omitempty"`
 
-
 	// LocalPermission is the permissions granted on the bucket for the provider
 	// specific bucket service account that is available in a secret after
 	// provisioning.

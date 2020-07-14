@@ -40,6 +40,8 @@ type S3BucketPolicyStatement struct {
 	ResourcePath []string `json:"Resource"`
 }
 
+// S3BucketPrincipal defines the principal users affected by
+// the S3BucketPolicyStatement
 type S3BucketPrincipal struct {
 	// This flag indicates if the policy should be made available
 	// to all anonymous users.
@@ -50,10 +52,10 @@ type S3BucketPrincipal struct {
 	AWSPrincipal []string `json:"AWS,omitempty"`
 }
 
+// MarshalJSON is the custom marshaller for the S3BucketPrincipal
 func (p *S3BucketPrincipal) MarshalJSON() ([]byte, error) {
 	if p.AllowAnon {
 		return json.Marshal("*")
 	}
 	return json.Marshal(p)
 }
-

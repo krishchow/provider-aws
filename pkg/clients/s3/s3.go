@@ -54,7 +54,6 @@ type Service interface {
 	UpdatePolicyDocument(username string, bucket *v1alpha3.S3Bucket) (string, error)
 	DeleteBucket(bucket *v1alpha3.S3Bucket) error
 	CreateBucketPolicy(bucket *v1alpha3.S3Bucket) error
-	FormatBucketPolicy(bucket *v1alpha3.S3Bucket) error
 }
 
 // Client implements S3 Client
@@ -82,9 +81,10 @@ func (c *Client) CreateOrUpdateBucket(bucket *v1alpha3.S3Bucket) error {
 	return err
 }
 
-func (c *Client) FormatBucketPolicy(bucket *v1alpha3.S3Bucket) error {
+// formatBucketPolicy parses and formats the bucket.Spec.BucketPolicy struct
+func (c *Client) formatBucketPolicy(bucket *v1alpha3.S3Bucket) error {
 	iamUsername := bucket.Spec.IAMUsername
-	accountId, err := c.iamClient.GetAccountID()
+	accountID, err := c.iamClient.GetAccountID()
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (c *Client) FormatBucketPolicy(bucket *v1alpha3.S3Bucket) error {
 	for i := 0; i < len(statements); i++ {
 		statement := statements[i]
 		if statement.ApplyToIAMUser {
-			statement.Principal.AWSPrincipal = append(statement.Principal.AWSPrincipal, fmt.Sprintf("arn:aws:iam::%s:%s:root", accountId, iamUsername))
+			statement.Principal.AWSPrincipal = append(statement.Principal.AWSPrincipal, fmt.Sprintf("arn:aws:iam::%s:%s:root", accountID, iamUsername))
 		}
 		updatedPaths := make([]string, len(statement.ResourcePath))
 		for _, v := range statement.ResourcePath {
@@ -104,7 +104,14 @@ func (c *Client) FormatBucketPolicy(bucket *v1alpha3.S3Bucket) error {
 	return nil
 }
 
+// CreateBucketPolicy creates the IAM Bucket Policy with the provided
+// specification.
 func (c *Client) CreateBucketPolicy(bucket *v1alpha3.S3Bucket) error {
+	err := c.formatBucketPolicy(bucket)
+
+	if err != nil {
+		return err
+	}
 
 	policyData, err := json.Marshal(bucket.Spec.BucketPolicy)
 	if err != nil {
@@ -112,7 +119,7 @@ func (c *Client) CreateBucketPolicy(bucket *v1alpha3.S3Bucket) error {
 	}
 	policyBody := string(policyData)
 
-	_, err = c.s3.PutBucketPolicy(&s3.PutBucketPolicyInput{Bucket: aws.String(meta.GetExternalName(bucket)), Policy: aws.String(policyBody), ConfirmRemoveSelfBucketAccess: aws.Bool(false) }).Send(context.TODO())
+	_, err = c.s3.PutBucketPolicy(&s3.PutBucketPolicyInput{Bucket: aws.String(meta.GetExternalName(bucket)), Policy: aws.String(policyBody), ConfirmRemoveSelfBucketAccess: aws.Bool(false)}).Send(context.TODO())
 	if resource.Ignore(isErrorNotFound, err) != nil {
 		return err
 	}

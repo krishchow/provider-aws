@@ -136,11 +136,7 @@ func (r *Reconciler) _create(bucket *bucketv1alpha3.S3Bucket, client s3.Service)
 
 	// Create bucket policy
 	if bucket.Spec.BucketPolicy != nil {
-		err = client.FormatBucketPolicy(bucket)
-		if err != nil {
-			return r.fail(bucket, err)
-		}
-		err = client.CreateBucketPolicy(bucket.Spec.BucketPolicy, bucket)
+		err = client.CreateBucketPolicy(bucket)
 		if err != nil {
 			return r.fail(bucket, err)
 		}

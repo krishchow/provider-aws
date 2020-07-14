@@ -56,6 +56,7 @@ func (api *S3Operations) CreateBucketRequest(i *s3.CreateBucketInput) CreateBuck
 	return api.s3.CreateBucketRequest(i)
 }
 
+// PutBucketPolicy creates a put bucket policy request
 func (api *S3Operations) PutBucketPolicy(i *s3.PutBucketPolicyInput) PutBucketPolicyRequest {
 	return api.s3.PutBucketPolicyRequest(i)
 }
