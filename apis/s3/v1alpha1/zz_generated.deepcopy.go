@@ -109,18 +109,18 @@ func (in *BucketPolicyParameters) DeepCopyInto(out *BucketPolicyParameters) {
 		*out = new(corev1alpha1.Selector)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.UserName != nil {
-		in, out := &in.UserName, &out.UserName
+	if in.UserNameARN != nil {
+		in, out := &in.UserNameARN, &out.UserNameARN
 		*out = new(string)
 		**out = **in
 	}
-	if in.UserNameRef != nil {
-		in, out := &in.UserNameRef, &out.UserNameRef
+	if in.UserNameARNRef != nil {
+		in, out := &in.UserNameARNRef, &out.UserNameARNRef
 		*out = new(corev1alpha1.Reference)
 		**out = **in
 	}
-	if in.UserNameSelector != nil {
-		in, out := &in.UserNameSelector, &out.UserNameSelector
+	if in.UserNameARNSelector != nil {
+		in, out := &in.UserNameARNSelector, &out.UserNameARNSelector
 		*out = new(corev1alpha1.Selector)
 		(*in).DeepCopyInto(*out)
 	}

@@ -47,15 +47,15 @@ type BucketPolicyParameters struct {
 
 	// UserName presents the name of the IAM user this BucketPolicy is concerned with.
 	// +optional
-	UserName *string `json:"userName,omitempty"`
+	UserNameARN *string `json:"userNameARN,omitempty"`
 
-	// UserNameRef references to an S3Bucket to retrieve its userName
+	// UserNameARNRef references to an S3Bucket to retrieve its userName
 	// +optional
-	UserNameRef *runtimev1alpha1.Reference `json:"userNameRef,omitempty"`
+	UserNameARNRef *runtimev1alpha1.Reference `json:"userNameARNRef,omitempty"`
 
-	// UserNameSelector selects a reference to an S3Bucket to retrieve its userName
+	// UserNameARNSelector selects a reference to an S3Bucket to retrieve its userName
 	// +optional
-	UserNameSelector *runtimev1alpha1.Selector `json:"userNameSelector,omitempty"`
+	UserNameARNSelector *runtimev1alpha1.Selector `json:"userNameARNSelector,omitempty"`
 }
 
 // Serialize is the custom marshaller for the BucketPolicyParameters

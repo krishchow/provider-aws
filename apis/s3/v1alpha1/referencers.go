@@ -17,11 +17,23 @@ import (
 	"context"
 
 	"github.com/crossplane/crossplane-runtime/pkg/reference"
+	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crossplane/provider-aws/apis/identity/v1alpha1"
 	"github.com/crossplane/provider-aws/apis/s3/v1beta1"
 )
+
+// IAMUserARN returns a function that returns the ARN of the given policy.
+func IAMUserARN() reference.ExtractValueFn {
+	return func(mg resource.Managed) string {
+		r, ok := mg.(*v1alpha1.IAMUser)
+		if !ok {
+			return ""
+		}
+		return r.Status.AtProvider.ARN
+	}
+}
 
 // ResolveReferences of this BucketPolicy
 func (mg *BucketPolicy) ResolveReferences(ctx context.Context, c client.Reader) error {
@@ -42,17 +54,17 @@ func (mg *BucketPolicy) ResolveReferences(ctx context.Context, c client.Reader) 
 
 	// Resolve spec.UserName
 	rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
-		CurrentValue: reference.FromPtrValue(mg.Spec.PolicyBody.UserName),
-		Reference:    mg.Spec.PolicyBody.UserNameRef,
-		Selector:     mg.Spec.PolicyBody.UserNameSelector,
+		CurrentValue: reference.FromPtrValue(mg.Spec.PolicyBody.UserNameARN),
+		Reference:    mg.Spec.PolicyBody.UserNameARNRef,
+		Selector:     mg.Spec.PolicyBody.UserNameARNSelector,
 		To:           reference.To{Managed: &v1alpha1.IAMUser{}, List: &v1alpha1.IAMUserList{}},
-		Extract:      reference.ExternalName(),
+		Extract:      IAMUserARN(),
 	})
 	if err != nil {
 		return err
 	}
-	mg.Spec.PolicyBody.UserName = reference.ToPtrValue(rsp.ResolvedValue)
-	mg.Spec.PolicyBody.UserNameRef = rsp.ResolvedReference
+	mg.Spec.PolicyBody.UserNameARN = reference.ToPtrValue(rsp.ResolvedValue)
+	mg.Spec.PolicyBody.UserNameARNRef = rsp.ResolvedReference
 
 	return nil
 }

@@ -144,11 +144,11 @@ spec:
                     - effect
                     type: object
                   type: array
-                userName:
+                userNameARN:
                   description: UserName presents the name of the IAM user this BucketPolicy is concerned with.
                   type: string
-                userNameRef:
-                  description: UserNameRef references to an S3Bucket to retrieve its userName
+                userNameARNRef:
+                  description: UserNameARNRef references to an S3Bucket to retrieve its userName
                   properties:
                     name:
                       description: Name of the referenced object.
@@ -156,8 +156,8 @@ spec:
                   required:
                   - name
                   type: object
-                userNameSelector:
-                  description: UserNameSelector selects a reference to an S3Bucket to retrieve its userName
+                userNameARNSelector:
+                  description: UserNameARNSelector selects a reference to an S3Bucket to retrieve its userName
                   properties:
                     matchControllerRef:
                       description: MatchControllerRef ensures an object with the same controller reference as the selecting object is selected.

@@ -36,15 +36,14 @@ import (
 
 	"github.com/crossplane/provider-aws/apis/s3/v1alpha1"
 	awscommon "github.com/crossplane/provider-aws/pkg/clients"
-	"github.com/crossplane/provider-aws/pkg/clients/iam"
 	"github.com/crossplane/provider-aws/pkg/clients/s3"
 )
 
 const (
-	errUnexpectedObject = "The managed resource is not an IAMRolePolicyAttachment resource"
-	errAttach           = "failed to attach the policy to role"
+	errUnexpectedObject = "The managed resource is not an Bucket Policy resource"
+	errAttach           = "failed to attach the bucket policy to bucket"
 	errDelete           = "failed to delete the policy for bucket"
-	errGet              = "failed to get BucketPolicy for bucket with name"
+	errGet              = "failed to get BucketPolicy for bucket"
 	errUpdate           = "failed to update the policy for bucket"
 )
 
@@ -58,18 +57,15 @@ func SetupBucketPolicy(mgr ctrl.Manager, l logging.Logger) error {
 		For(&v1alpha1.BucketPolicy{}).
 		Complete(managed.NewReconciler(mgr,
 			resource.ManagedKind(v1alpha1.BucketPolicyGroupVersionKind),
-			managed.WithExternalConnecter(&connector{kube: mgr.GetClient(),
-				newClientFn:    s3.NewBucketPolicyClient,
-				newIAMClientFn: iam.NewClient}),
+			managed.WithExternalConnecter(&connector{kube: mgr.GetClient(), newClientFn: s3.NewBucketPolicyClient}),
 			managed.WithReferenceResolver(managed.NewAPISimpleReferenceResolver(mgr.GetClient())),
 			managed.WithLogger(l.WithValues("controller", name)),
 			managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name)))))
 }
 
 type connector struct {
-	kube           client.Client
-	newClientFn    func(config aws.Config) s3.BucketPolicyClient
-	newIAMClientFn func(config aws.Config) iam.Client
+	kube        client.Client
+	newClientFn func(config aws.Config) s3.BucketPolicyClient
 }
 
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
@@ -77,13 +73,12 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 	if err != nil {
 		return nil, err
 	}
-	return &external{client: c.newClientFn(*cfg), iamclient: c.newIAMClientFn(*cfg), kube: c.kube}, nil
+	return &external{client: c.newClientFn(*cfg), kube: c.kube}, nil
 }
 
 type external struct {
-	client    s3.BucketPolicyClient
-	iamclient iam.Client
-	kube      client.Client
+	client s3.BucketPolicyClient
+	kube   client.Client
 }
 
 func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.ExternalObservation, error) {
@@ -120,11 +115,7 @@ func (e *external) Observe(ctx context.Context, mgd resource.Managed) (managed.E
 // formatBucketPolicy parses and formats the bucket.Spec.BucketPolicy struct
 func (e *external) formatBucketPolicy(original *v1alpha1.BucketPolicy) (*string, error) {
 	c := original.DeepCopy()
-	iamUsername := aws.StringValue(c.Spec.PolicyBody.UserName)
-	accountID, err := e.iamclient.GetAccountID()
-	if err != nil {
-		return nil, err
-	}
+	iamUsernameARN := aws.StringValue(c.Spec.PolicyBody.UserNameARN)
 	statements := c.Spec.PolicyBody.PolicyStatement
 	newStatements := make([]v1alpha1.BucketPolicyStatement, 0)
 	for _, statement := range statements {
@@ -135,7 +126,7 @@ func (e *external) formatBucketPolicy(original *v1alpha1.BucketPolicy) (*string,
 			if statement.Principal.AWSPrincipal == nil {
 				statement.Principal.AWSPrincipal = make([]string, 0)
 			}
-			statement.Principal.AWSPrincipal = append(statement.Principal.AWSPrincipal, fmt.Sprintf("arn:aws:iam::%s:user/%s", accountID, iamUsername))
+			statement.Principal.AWSPrincipal = append(statement.Principal.AWSPrincipal, iamUsernameARN)
 		}
 		updatedPaths := make([]string, 0)
 		for _, v := range statement.ResourcePath {
@@ -172,7 +163,7 @@ func (e *external) Create(ctx context.Context, mgd resource.Managed) (managed.Ex
 	}
 
 	policyString := *policyData
-	_, err = e.client.PutBucketPolicyRequest(&awss3.PutBucketPolicyInput{Bucket: cr.Spec.PolicyBody.BucketName, Policy: aws.String(policyString)}).Send(context.TODO())
+	_, err = e.client.PutBucketPolicyRequest(&awss3.PutBucketPolicyInput{Bucket: cr.Spec.PolicyBody.BucketName, Policy: aws.String(policyString)}).Send(ctx)
 	return managed.ExternalCreation{}, errors.Wrap(err, errAttach)
 }
 
@@ -188,7 +179,7 @@ func (e *external) Update(ctx context.Context, mgd resource.Managed) (managed.Ex
 		return managed.ExternalUpdate{}, errors.Wrap(err, errUpdate)
 	}
 
-	_, err = e.client.PutBucketPolicyRequest(&awss3.PutBucketPolicyInput{Bucket: cr.Spec.PolicyBody.BucketName, Policy: aws.String(*policyData)}).Send(context.TODO())
+	_, err = e.client.PutBucketPolicyRequest(&awss3.PutBucketPolicyInput{Bucket: cr.Spec.PolicyBody.BucketName, Policy: aws.String(*policyData)}).Send(ctx)
 	return managed.ExternalUpdate{}, errors.Wrap(err, errUpdate)
 }
 
@@ -199,7 +190,7 @@ func (e *external) Delete(ctx context.Context, mgd resource.Managed) error {
 		return errors.New(errUnexpectedObject)
 	}
 	cr.SetConditions(runtimev1alpha1.Deleting())
-	_, err := e.client.DeleteBucketPolicyRequest(&awss3.DeleteBucketPolicyInput{Bucket: cr.Spec.PolicyBody.BucketName}).Send(context.TODO())
+	_, err := e.client.DeleteBucketPolicyRequest(&awss3.DeleteBucketPolicyInput{Bucket: cr.Spec.PolicyBody.BucketName}).Send(ctx)
 	if s3.IsErrorBucketNotFound(err) {
 		return nil
 	}
